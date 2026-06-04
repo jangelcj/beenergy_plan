@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
   --navy:#0F2038; --navy90:#1a3050; --navy70:#2e4d6e; --navy50:#577a96; --navy30:#8faab8; --navy10:#d0dde6;
@@ -96,8 +95,6 @@ button.accent:hover{background:#d99300}
   </div>
   <div class="controls">
     <button class="ghost" id="todayBtn">◎ Hoy</button>
-    <button class="accent" id="loadXlsx">⬆ Cargar .xlsx</button>
-    <input type="file" id="fileInput" class="hidden-file" accept=".xlsx,.xls,.csv">
   </div>
 </header>
 
@@ -124,7 +121,7 @@ button.accent:hover{background:#d99300}
 <div class="src" id="src"></div>
 <div class="tt" id="tt"></div>
 
-<!-- Cuadro de bienvenida (solo si no hay data.json) -->
+<!-- Aviso (solo si no se encuentra data.json) -->
 <div class="overlay welcome" id="welcome">
   <div class="modal welcome-modal">
     <div class="modal-head">
@@ -133,11 +130,10 @@ button.accent:hover{background:#d99300}
     </div>
     <div class="modal-body" style="text-align:center;padding:32px 26px">
       <p style="font-size:1rem;color:var(--navy70);line-height:1.55;margin-bottom:8px">
-        No se encontró el cronograma publicado.</p>
-      <p style="font-size:.84rem;color:var(--navy50);line-height:1.5;margin-bottom:22px">
-        Puedes cargar manualmente el fichero <b>.xlsx</b> para previsualizarlo.
-        Se procesa en tu navegador; no se sube a ningún servidor.</p>
-      <button class="accent" id="welcomeLoad" style="font-size:1rem;padding:12px 28px">⬆ Cargar fichero .xlsx</button>
+        No se encontró el cronograma publicado (<code>data.json</code>).</p>
+      <p style="font-size:.84rem;color:var(--navy50);line-height:1.5">
+        Si acabas de actualizar los datos, espera unos segundos a que termine la
+        publicación y recarga la página.</p>
     </div>
   </div>
 </div>
@@ -182,18 +178,6 @@ function fmt(d){return d?d.toLocaleDateString("es-ES",{day:"2-digit",month:"shor
 function statusKey(t){return t.st&&STATUS_COLOR[t.st]?t.st:"Sin estado";}
 
 /* ---- carga ---- */
-function loadXlsx(file){
-  document.getElementById("statusMsg").textContent="Leyendo "+file.name+"…";
-  const reader=new FileReader();
-  reader.onload=e=>{try{
-    const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
-    const ws=wb.Sheets[wb.SheetNames[0]];
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:""});
-    buildFromRows(rows,"Fichero local · "+file.name);
-  }catch(err){document.getElementById("statusMsg").textContent="Error leyendo el .xlsx: "+err.message;}};
-  reader.readAsArrayBuffer(file);
-}
-
 // Carga automática del cronograma publicado (data.json en el repo)
 function loadData(){
   fetch("data.json?v="+Date.now()).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json()})
@@ -451,9 +435,6 @@ document.getElementById("m-close").onclick=closeModal;
 document.getElementById("overlay").addEventListener("click",e=>{if(e.target.id==="overlay")closeModal();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
 
-document.getElementById("loadXlsx").onclick=()=>document.getElementById("fileInput").click();
-document.getElementById("welcomeLoad").onclick=()=>document.getElementById("fileInput").click();
-document.getElementById("fileInput").addEventListener("change",e=>{if(e.target.files[0])loadXlsx(e.target.files[0]);e.target.value="";});
 document.getElementById("depToggle").onclick=function(){SHOW_DEP=!SHOW_DEP;this.classList.toggle("on",SHOW_DEP);draw()};
 
 // Botón HOY: centra el cuerpo en la fecha actual
@@ -469,7 +450,7 @@ document.getElementById("todayBtn").onclick=()=>{
 };
 
 renderKPIs();
-// Carga automática del cronograma publicado; si no existe, muestra la bienvenida.
+// Carga automática del cronograma publicado.
 loadData();
 
 </script>

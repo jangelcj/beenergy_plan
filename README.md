@@ -4,7 +4,8 @@ Visualización Gantt interactiva del cronograma de implantación de la planta
 (filtros por estado y categoría, dependencias, hitos, modal de detalle y botón "Hoy").
 
 Es un sitio **estático**: un único `index.html` que carga `data.json` automáticamente.
-Se publica en Vercel desde GitHub y se comparte por enlace.
+El `data.json` lo **genera Vercel en cada despliegue** a partir del Excel, así que
+para actualizar el cronograma solo tienes que subir el Excel a GitHub.
 
 ---
 
@@ -12,11 +13,11 @@ Se publica en Vercel desde GitHub y se comparte por enlace.
 
 ```
 index.html              La aplicación (Gantt). No hay que tocarla.
-data.json               Los datos del cronograma (se regenera desde el Excel).
-Cronograma__HITOS_.xlsx El Excel fuente. Edita aquí las fechas y estados.
-generar-datos.js        Script que convierte el Excel en data.json.
-package.json            Dependencias (SheetJS).
-vercel.json             Configuración de Vercel (sitio estático).
+Cronograma__HITOS_.xlsx El Excel fuente. Es lo único que editas y subes.
+generar-datos.js        Convierte el Excel en data.json (lo ejecuta Vercel).
+package.json            Dependencias (SheetJS) y comando de build.
+vercel.json             Configuración de Vercel (build + estático).
+data.json               Se genera automáticamente; no está en el repositorio.
 ```
 
 ---
@@ -25,33 +26,44 @@ vercel.json             Configuración de Vercel (sitio estático).
 
 ### 1. Subir a GitHub
 1. Crea un repositorio nuevo en GitHub (puede ser privado).
-2. Sube todos estos ficheros al repositorio (web de GitHub: "Add file" → "Upload files", o por `git`).
+2. Sube estos ficheros (web de GitHub: "Add file" → "Upload files", o por `git`).
+   No hace falta subir `data.json`: lo crea Vercel.
 
 ### 2. Conectar con Vercel
 1. Entra en https://vercel.com e inicia sesión con tu cuenta de GitHub.
 2. "Add New… → Project" e importa el repositorio.
-3. No configures nada de *build* (es estático). Pulsa **Deploy**.
-4. Al terminar, Vercel te da una URL del tipo `https://tu-proyecto.vercel.app`.
+3. Vercel detecta el `vercel.json`. No cambies nada y pulsa **Deploy**.
+   (En el despliegue, Vercel instala dependencias y ejecuta `generar-datos.js`,
+   que produce el `data.json` a partir del Excel.)
+4. Al terminar, te da una URL `https://tu-proyecto.vercel.app`.
    Esa es la que compartes con el equipo.
 
 ---
 
-## Actualizar el cronograma
+## Actualizar el cronograma (el día a día)
 
-Cada vez que cambien fechas, estados o tareas:
+Solo un paso, todo desde el navegador:
 
-1. Edita **`Cronograma__HITOS_.xlsx`** (hoja **"Planificación"**; las demás hojas se ignoran).
-2. Regenera el `data.json`:
-   ```
-   npm install      (solo la primera vez)
-   npm run datos
-   ```
-   Esto lee el Excel y reescribe `data.json` con la fecha de actualización.
-3. Sube los cambios (`data.json` y el Excel) al repositorio.
-   Vercel detecta el commit y **republica solo** en unos segundos.
+1. Edita el Excel **`Cronograma__HITOS_.xlsx`** en tu equipo
+   (hoja **"Planificación"**; las demás hojas se ignoran).
+2. Súbelo a GitHub sobrescribiendo el anterior:
+   en el repositorio, "Add file" → "Upload files", arrastra el Excel y confirma.
 
-> Si no quieres usar la línea de comandos, puedes editar el Excel, regenerar el
-> `data.json` en tu equipo y subir solo ese fichero por la web de GitHub.
+Vercel detecta el cambio, regenera el `data.json` y **republica solo** en unos
+segundos. Recarga la página y verás los datos nuevos (el pie muestra la fecha y
+hora de la última actualización).
+
+> No necesitas instalar nada ni usar la terminal para el uso normal.
+
+### Probar en local (opcional)
+Si quieres previsualizar antes de subir:
+```
+npm install      (solo la primera vez)
+npm run datos    genera data.json desde el Excel
+```
+y abre `index.html` con un pequeño servidor local
+(por ejemplo `npx serve .`), no con doble clic, para que el navegador
+pueda leer el `data.json`.
 
 ### Formato del Excel
 Columnas de la hoja "Planificación", en este orden:
@@ -76,5 +88,3 @@ normalidad (SharePoint ya no bloquea nada, porque el sitio se sirve desde Vercel
 ## Notas
 - El plan **Hobby** de Vercel es gratuito y el sitio es **público**: cualquiera con la
   URL puede verlo. Adecuado para datos no sensibles compartidos con personas de confianza.
-- El botón "⬆ Cargar .xlsx" de la aplicación permite previsualizar un Excel en local
-  sin publicar nada (útil para revisar cambios antes de subirlos).

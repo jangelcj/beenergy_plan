@@ -15,8 +15,17 @@ const XLSX = require("xlsx");
 const fs = require("fs");
 const path = require("path");
 
-const SRC = process.argv[2] || "Cronograma__HITOS_.xlsx";
-const SHEET = "Planificación";          // primera hoja; el resto se ignora
+// Excel fuente: argumento, o nombre por defecto, o el primer .xlsx de la carpeta.
+function resolverExcel() {
+  const arg = process.argv[2];
+  if (arg && fs.existsSync(arg)) return arg;
+  const def = "Cronograma__HITOS_.xlsx";
+  if (fs.existsSync(def)) return def;
+  const xlsx = fs.readdirSync(".").filter(f => /\.xlsx$/i.test(f) && !f.startsWith("~$"));
+  return xlsx[0] || def;
+}
+const SRC = resolverExcel();
+const SHEET = "Planificación";          // hoja de datos; el resto se ignora
 const OUT = "data.json";
 
 // mm/dd/yy o mm/dd/yyyy  ->  yyyy-mm-dd  (ISO, sin ambigüedad para el navegador)
@@ -39,11 +48,8 @@ function main() {
     process.exit(1);
   }
   const wb = XLSX.readFile(SRC);
-  if (!wb.Sheets[SHEET]) {
-    console.error(`La hoja "${SHEET}" no existe. Hojas disponibles:`, wb.SheetNames.join(", "));
-    process.exit(1);
-  }
-  const ws = wb.Sheets[SHEET];
+  const sheetName = wb.Sheets[SHEET] ? SHEET : wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: "" });
 
   // localizar cabecera (fila con "Categoría")
@@ -64,7 +70,7 @@ function main() {
 
   const payload = { generated: new Date().toISOString(), rows: out };
   fs.writeFileSync(OUT, JSON.stringify(payload, null, 0), "utf8");
-  console.log(`OK -> ${OUT}  (${out.length - 1} tareas, generado ${payload.generated})`);
+  console.log(`OK -> ${OUT}  ·  fuente: ${SRC} [hoja "${sheetName}"]  ·  ${out.length - 1} tareas  ·  ${payload.generated}`);
 }
 
 main();
